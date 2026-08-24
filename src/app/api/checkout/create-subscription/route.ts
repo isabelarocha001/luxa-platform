@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
-import { getStripe, planAmountCents } from "@/lib/stripe";
+import { getStripe, planAmountCents, extractInvoiceClientSecret } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { getCreatorByHandle } from "@/lib/demo-data";
-import type Stripe from "stripe";
 
+/**
+ * Creates an incomplete subscription and returns PaymentIntent client_secret
+ * for Stripe Payment Element (inline modal — no hosted Checkout redirect).
+ *
+ * STRIPE RULE (do not break again):
+ * - Checkout Session `line_items.price_data` MAY use `product_data`
+ * - Subscription `items.price_data` MUST use `product: "prod_xxx"` (existing Product id)
+ *   — TypeScript `PriceData` has no `product_data` field for subscriptions.
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -40,8 +48,7 @@ export async function POST(request: Request) {
 
     const stripe = getStripe();
 
-    // Reuse customer by metadata user id
-    let customerId: string | undefined;
+    let customerId: string;
     const existing = await stripe.customers.search({
       query: `metadata['luxa_user_id']:'${user.id}'`,
       limit: 1,
@@ -56,6 +63,16 @@ export async function POST(request: Request) {
       customerId = customer.id;
     }
 
+    // Subscription price_data requires an existing Product id (not product_data).
+    const product = await stripe.products.create({
+      name: `@${creator.handle} — ${planMonths}mo`,
+      metadata: {
+        creator_handle: creator.handle,
+        plan_months: String(planMonths),
+        luxa: "1",
+      },
+    });
+
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       payment_behavior: "default_incomplete",
@@ -67,17 +84,11 @@ export async function POST(request: Request) {
         {
           price_data: {
             currency: "eur",
+            product: product.id,
             unit_amount: amountCents,
             recurring: {
               interval: "month",
               interval_count: planMonths,
-            },
-            product_data: {
-              name: `@${creator.handle} — ${planMonths}mo`,
-              metadata: {
-                creator_handle: creator.handle,
-                plan_months: String(planMonths),
-              },
             },
           },
         },
@@ -87,18 +98,10 @@ export async function POST(request: Request) {
         creator_handle: creator.handle,
         plan_months: String(planMonths),
       },
-      expand: ["latest_invoice.confirmation_secret", "latest_invoice.payment_intent"],
+      expand: ["latest_invoice.confirmation_secret"],
     });
 
-    const invoice = subscription.latest_invoice as Stripe.Invoice | null;
-    const clientSecret =
-      (invoice as { confirmation_secret?: { client_secret?: string } } | null)
-        ?.confirmation_secret?.client_secret ||
-      (typeof invoice?.payment_intent === "object" &&
-      invoice?.payment_intent &&
-      "client_secret" in invoice.payment_intent
-        ? (invoice.payment_intent as Stripe.PaymentIntent).client_secret
-        : null);
+    const clientSecret = extractInvoiceClientSecret(subscription.latest_invoice);
 
     if (!clientSecret) {
       return NextResponse.json(
