@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { HEARTBEAT_MS } from "@/lib/presence";
 
 /**
- * Pings /api/presence/heartbeat every 60s when the tab is visible.
- * Only affects rows where luxa_creators.user_id = current user.
+ * Pings /api/presence/heartbeat every 1 minute while the tab is visible.
+ * Updates luxa_creators.last_seen_at when user_id matches the logged-in user.
  */
 export function PresenceHeartbeat() {
   useEffect(() => {
@@ -13,14 +14,17 @@ export function PresenceHeartbeat() {
     async function beat() {
       if (document.visibilityState !== "visible") return;
       try {
-        await fetch("/api/presence/heartbeat", { method: "POST" });
+        await fetch("/api/presence/heartbeat", {
+          method: "POST",
+          keepalive: true,
+        });
       } catch {
         // ignore network errors
       }
     }
 
-    beat();
-    timer = setInterval(beat, 60_000);
+    beat(); // immediate on mount
+    timer = setInterval(beat, HEARTBEAT_MS); // every 1 min
 
     const onVis = () => {
       if (document.visibilityState === "visible") beat();
