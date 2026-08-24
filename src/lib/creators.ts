@@ -1,24 +1,36 @@
-import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Creator, MediaItem } from "@/lib/types";
 import { isOnline } from "@/lib/presence";
 
-/**
- * Real creators from Supabase luxa_creators (active only for public).
- * Never throws — empty list on missing env / network / RLS errors.
- */
-
-function db() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
+function db(): SupabaseClient | null {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+  const key = (
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    ""
+  ).trim();
 
   if (!url || !key) {
     console.error(
       JSON.stringify({
         level: "error",
         scope: "creators.db",
-        message: "Missing NEXT_PUBLIC_SUPABASE_URL or anon/service key",
+        message: "Missing Supabase URL or key",
+      }),
+    );
+    return null;
+  }
+
+  try {
+    // Validate URL early
+    // eslint-disable-next-line no-new
+    new URL(url);
+  } catch {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        scope: "creators.db",
+        message: "Invalid NEXT_PUBLIC_SUPABASE_URL",
       }),
     );
     return null;
@@ -28,9 +40,6 @@ function db() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
-
-const SELECT =
-  "id, handle, display_name, bio, location, avatar_url, banner_url, price_monthly_cents, is_verified, is_active, last_seen_at";
 
 function mapRow(row: Record<string, unknown>): Creator {
   const priceCents = Number(row.price_monthly_cents || 0);
@@ -83,16 +92,32 @@ function mapRow(row: Record<string, unknown>): Creator {
   };
 }
 
+const SELECT_FULL =
+  "id, handle, display_name, bio, location, avatar_url, banner_url, price_monthly_cents, is_verified, is_active, last_seen_at";
+const SELECT_BASIC =
+  "id, handle, display_name, bio, location, avatar_url, banner_url, price_monthly_cents, is_verified, is_active";
+
 export async function listActiveCreators(): Promise<Creator[]> {
   try {
     const client = db();
     if (!client) return [];
 
-    const { data, error } = await client
+    let { data, error } = await client
       .from("luxa_creators")
-      .select(SELECT)
+      .select(SELECT_FULL)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
+
+    // Column last_seen_at may be missing on older DBs — fallback
+    if (error && /last_seen_at/i.test(error.message)) {
+      const retry = await client
+        .from("luxa_creators")
+        .select(SELECT_BASIC)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error(
@@ -125,12 +150,23 @@ export async function getCreatorByHandle(
     const client = db();
     if (!client) return null;
 
-    const { data, error } = await client
+    let { data, error } = await client
       .from("luxa_creators")
-      .select(SELECT)
+      .select(SELECT_FULL)
       .eq("handle", h)
       .eq("is_active", true)
       .maybeSingle();
+
+    if (error && /last_seen_at/i.test(error.message)) {
+      const retry = await client
+        .from("luxa_creators")
+        .select(SELECT_BASIC)
+        .eq("handle", h)
+        .eq("is_active", true)
+        .maybeSingle();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error(

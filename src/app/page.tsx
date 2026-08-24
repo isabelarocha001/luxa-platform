@@ -3,35 +3,29 @@ import { listActiveCreators } from "@/lib/creators";
 import { PresenceLabel } from "@/components/PresenceLabel";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export default async function HomePage() {
-  let creators: Awaited<ReturnType<typeof listActiveCreators>> = [];
-  let loadError: string | null = null;
-
-  try {
-    creators = await listActiveCreators();
-  } catch (e) {
-    loadError = e instanceof Error ? e.message : "Failed to load";
-  }
+  const creators = await listActiveCreators();
 
   return (
     <main className="mx-auto w-full max-w-5xl min-w-0 px-3 py-6 sm:px-4 sm:py-8">
-      {loadError && (
-        <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          Could not load creators. Check Vercel env (Supabase URL + anon key).
-        </div>
-      )}
-
-      {!creators.length && !loadError && (
+      {!creators.length && (
         <div className="rounded-2xl border border-dashed border-luxa-border bg-luxa-card/50 px-4 py-12 text-center">
           <p className="text-sm text-luxa-muted">No creators yet.</p>
+          <p className="mt-2 text-xs text-luxa-muted/70">
+            Diagnostics:{" "}
+            <a href="/api/health" className="text-luxa-accent underline">
+              /api/health
+            </a>
+          </p>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {creators.map((c) => (
           <Link
-            key={c.handle}
+            key={c.id || c.handle}
             href={`/c/${c.handle}`}
             className="group min-w-0 overflow-hidden rounded-2xl border border-luxa-border bg-luxa-card transition hover:border-luxa-accent/50"
           >
@@ -41,6 +35,7 @@ export default async function HomePage() {
             />
             <div className="relative min-w-0 px-3 pb-4 pt-8 sm:px-4">
               <div className="absolute -top-8 left-3 sm:left-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={c.avatar}
                   alt=""
@@ -64,7 +59,7 @@ export default async function HomePage() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-luxa-accent/15 px-2.5 py-1 text-xs font-semibold text-luxa-accent">
-                  €{c.priceMonthly.toFixed(2)}/mo
+                  €{Number(c.priceMonthly || 0).toFixed(2)}/mo
                 </span>
               </div>
             </div>
