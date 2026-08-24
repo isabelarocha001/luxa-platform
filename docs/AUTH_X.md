@@ -1,50 +1,37 @@
 # Login com X (Twitter)
 
-App OAuth: **fanyx** (credenciais só em secrets — **nunca** no Git).
+## Middleware 500 (MIDDLEWARE_INVOCATION_FAILED)
 
-## 1. Portal X Developer
+Se a Vercel mostra crash no Routing Middleware:
 
-Em [developer.x.com](https://developer.x.com) → app **fanyx**:
+1. Confirma na Vercel (Production + Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+2. Redeploy depois de gravar as env.
+3. O middleware foi endurecido para **não** derrubar o site se o env faltar.
 
-**Callback URL / Redirect URI** (obrigatório):
+## OAuth no Supabase (importante)
+
+O provider **Twitter** no Supabase usa normalmente as chaves **OAuth 1.0a**:
+
+- API Key (Consumer Key) → Client ID no Supabase
+- API Secret Key → Client Secret no Supabase
+
+As credenciais **OAuth 2.0** (Client ID tipo `Q3ZpdXVf…` + Client Secret) do portal X **não** substituem automaticamente o provider clássico do Supabase. Se o outro app já funciona com as chaves antigas, **mantém** as mesmas no Supabase para a Luxa.
+
+## Callback no portal X
 
 ```
 https://sgolmmhbufosmtigaakx.supabase.co/auth/v1/callback
 ```
 
-Website URL: URL de produção da Luxa na Vercel.
+## Redirect no Supabase
 
-Permissões: Read (basta para login).
+```
+https://SEU-DOMINIO.vercel.app/auth/callback
+```
 
-## 2. Supabase Dashboard
+## Código Luxa
 
-**Authentication → Providers → Twitter**
-
-| Campo | Valor |
-|--------|--------|
-| Enable | ON |
-| API Key | Consumer Key do app X |
-| API Secret Key | Secret Key do app X |
-
-**Authentication → URL Configuration**
-
-- Site URL: `https://SEU-DOMINIO.vercel.app`
-- Redirect URLs: `https://SEU-DOMINIO.vercel.app/auth/callback`
-
-## 3. Fluxo no app
-
-1. Botão **Continue with X** → `signInWithOAuth({ provider: "twitter" })`
-2. X autoriza → Supabase callback
-3. Redirect → `/auth/callback` → sessão cookie → home
-
-## 4. Segurança
-
-- Consumer Key / Secret / Bearer **não** entram no repositório.
-- Se vazaram no chat, **regenerar** no portal X.
-- Bearer Token (app-only) não é necessário para OAuth de usuário.
-
-## Código
-
-- `src/components/XAuthButton.tsx`
-- `src/app/auth/login/page.tsx` / `signup/page.tsx`
-- `src/app/auth/callback/route.ts`
+- `XAuthButton` → `signInWithOAuth({ provider: "twitter" })`
+- `/auth/callback` troca o `code` pela sessão
