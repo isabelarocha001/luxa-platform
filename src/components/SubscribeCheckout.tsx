@@ -7,7 +7,7 @@ import { CreditCard, Lock, ArrowLeft, Loader2 } from "lucide-react";
 import type { Creator } from "@/lib/demo-data";
 import { StripePaymentModal } from "@/components/StripePaymentModal";
 
-/** Inline Stripe Payment Element in a popup — no hosted Checkout redirect. */
+/** Checkout inline — layout fluido, sem overflow horizontal */
 export function SubscribeCheckout({ creator }: { creator: Creator }) {
   const params = useSearchParams();
   const router = useRouter();
@@ -59,46 +59,47 @@ export function SubscribeCheckout({ creator }: { creator: Creator }) {
       : `/c/${creator.handle}/subscribe/success`;
 
   return (
-    <main className="mx-auto max-w-lg px-4 py-8">
+    <main className="mx-auto w-full max-w-lg min-w-0 px-3 py-6 sm:px-4 sm:py-8">
       <Link
         href={`/c/${creator.handle}`}
         className="mb-6 inline-flex items-center gap-1 text-sm text-luxa-muted hover:text-luxa-text"
       >
-        <ArrowLeft size={16} /> Back to profile
+        <ArrowLeft size={16} className="shrink-0" /> Back to profile
       </Link>
 
-      <div className="rounded-2xl border border-luxa-border bg-luxa-card p-6">
-        <div className="flex items-center gap-3">
+      <div className="min-w-0 rounded-2xl border border-luxa-border bg-luxa-card p-4 sm:p-6">
+        <div className="flex min-w-0 items-center gap-3">
           <img
             src={creator.avatar}
             alt=""
-            className="h-12 w-12 rounded-full object-cover"
+            className="h-12 w-12 shrink-0 rounded-full object-cover"
           />
-          <div>
-            <p className="font-semibold">{creator.displayName}</p>
-            <p className="text-sm text-luxa-muted">@{creator.handle}</p>
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{creator.displayName}</p>
+            <p className="truncate text-sm text-luxa-muted">@{creator.handle}</p>
           </div>
         </div>
 
-        <div className="mt-6 rounded-xl bg-luxa-surface p-4">
+        <div className="mt-6 min-w-0 rounded-xl bg-luxa-surface p-4">
           <p className="text-xs font-semibold uppercase text-luxa-muted">Plan</p>
-          <p className="mt-1 text-lg font-bold">{label}</p>
+          <p className="mt-1 break-anywhere text-lg font-bold">{label}</p>
           <p className="mt-1 text-xs text-luxa-muted">
             Recurring · EUR · Card only · paid inside Luxa
           </p>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 min-w-0">
           <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
-            <CreditCard size={16} className="text-luxa-accent" />
+            <CreditCard size={16} className="shrink-0 text-luxa-accent" />
             Pay with card
           </p>
           <p className="mb-4 text-xs text-luxa-muted">
             Card form opens in a popup on this page (Stripe Payment Element).
-            You are not sent to stripe.com checkout.
           </p>
 
-          {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+          {error && (
+            <p className="mb-3 break-anywhere text-sm text-red-400">{error}</p>
+          )}
 
           <button
             type="button"
@@ -112,7 +113,7 @@ export function SubscribeCheckout({ creator }: { creator: Creator }) {
               </>
             ) : (
               <>
-                <Lock size={16} /> Pay €{price.toFixed(2)}
+                <Lock size={16} className="shrink-0" /> Pay €{price.toFixed(2)}
               </>
             )}
           </button>

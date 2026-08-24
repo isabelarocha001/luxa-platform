@@ -51,7 +51,6 @@ function PaymentForm({
       return;
     }
 
-    // 3DS may redirect; if still processing:
     if (
       paymentIntent &&
       (paymentIntent.status === "processing" ||
@@ -65,14 +64,16 @@ function PaymentForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="min-w-0 space-y-4">
       <PaymentElement
         options={{
           layout: "tabs",
           paymentMethodOrder: ["card"],
         }}
       />
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="break-anywhere text-sm text-red-400">{error}</p>
+      )}
       <button
         type="submit"
         disabled={!stripe || busy}
@@ -90,6 +91,7 @@ function PaymentForm({
   );
 }
 
+/** Modal de pagamento — sheet no mobile, centrado no desktop; scroll interno se altura for baixa */
 export function StripePaymentModal({
   clientSecret,
   amountLabel,
@@ -121,24 +123,20 @@ export function StripePaymentModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-4 sm:items-center">
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-luxa-border bg-luxa-card p-5 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+      <div className="absolute inset-0" onClick={onClose} aria-hidden />
+      <div className="luxa-sheet relative z-10 w-full max-w-md min-w-0 rounded-t-2xl border border-luxa-border bg-luxa-card p-4 shadow-2xl sm:rounded-2xl sm:p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-luxa-muted">
               Card payment
             </p>
-            <p className="text-lg font-bold">{amountLabel}</p>
+            <p className="truncate text-lg font-bold">{amountLabel}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-luxa-muted hover:bg-luxa-surface hover:text-luxa-text"
+            className="shrink-0 rounded-full p-2 text-luxa-muted hover:bg-luxa-surface hover:text-luxa-text"
             aria-label="Close"
           >
             <X size={18} />
@@ -146,7 +144,7 @@ export function StripePaymentModal({
         </div>
 
         {!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? (
-          <p className="text-sm text-red-400">
+          <p className="break-anywhere text-sm text-red-400">
             Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY on Vercel.
           </p>
         ) : (
