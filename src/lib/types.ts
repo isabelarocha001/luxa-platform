@@ -22,6 +22,8 @@ export type Creator = {
   stats: { photos: number; videos: number; likes: string };
   postsCount: number;
   mediaCount: number;
+  /** Derived from lastSeenAt within 5 min */
   online: boolean;
+  lastSeenAt: string | null;
   media: MediaItem[];
 };

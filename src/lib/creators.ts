@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { Creator, MediaItem } from "@/lib/types";
+import { isOnline } from "@/lib/presence";
 
 /**
  * Real creators from Supabase luxa_creators (active only for public).
- * No demo/fake profiles.
+ * Presence from last_seen_at (heartbeat).
  */
 
 function db() {
@@ -15,17 +15,32 @@ function db() {
   return createServiceClient(url, key);
 }
 
+const SELECT =
+  "id, handle, display_name, bio, location, avatar_url, banner_url, price_monthly_cents, is_verified, is_active, last_seen_at";
+
 function mapRow(row: Record<string, unknown>): Creator {
   const priceCents = Number(row.price_monthly_cents || 0);
   const priceMonthly = priceCents / 100;
   const handle = String(row.handle || "");
   const displayName = String(row.display_name || handle);
+  const lastSeenAt = row.last_seen_at ? String(row.last_seen_at) : null;
 
-  // Bundles: simple discounts derived from monthly (same formula as old demo)
   const bundles = [
-    { months: 3, total: Math.round(priceMonthly * 3 * 0.85 * 100) / 100, discountPct: 15 },
-    { months: 6, total: Math.round(priceMonthly * 6 * 0.8 * 100) / 100, discountPct: 20 },
-    { months: 12, total: Math.round(priceMonthly * 12 * 0.75 * 100) / 100, discountPct: 25 },
+    {
+      months: 3,
+      total: Math.round(priceMonthly * 3 * 0.85 * 100) / 100,
+      discountPct: 15,
+    },
+    {
+      months: 6,
+      total: Math.round(priceMonthly * 6 * 0.8 * 100) / 100,
+      discountPct: 20,
+    },
+    {
+      months: 12,
+      total: Math.round(priceMonthly * 12 * 0.75 * 100) / 100,
+      discountPct: 25,
+    },
   ];
 
   const media: MediaItem[] = [];
@@ -48,7 +63,8 @@ function mapRow(row: Record<string, unknown>): Creator {
     stats: { photos: 0, videos: 0, likes: "0" },
     postsCount: 0,
     mediaCount: 0,
-    online: false,
+    online: isOnline(lastSeenAt),
+    lastSeenAt,
     media,
   };
 }
@@ -56,14 +72,18 @@ function mapRow(row: Record<string, unknown>): Creator {
 export async function listActiveCreators(): Promise<Creator[]> {
   const { data, error } = await db()
     .from("luxa_creators")
-    .select(
-      "id, handle, display_name, bio, location, avatar_url, banner_url, price_monthly_cents, is_verified, is_active",
-    )
+    .select(SELECT)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error(JSON.stringify({ level: "error", scope: "creators.list", message: error.message }));
+    console.error(
+      JSON.stringify({
+        level: "error",
+        scope: "creators.list",
+        message: error.message,
+      }),
+    );
     return [];
   }
   return (data || []).map((r) => mapRow(r as Record<string, unknown>));
@@ -75,9 +95,7 @@ export async function getCreatorByHandle(
   const h = handle.toLowerCase();
   const { data, error } = await db()
     .from("luxa_creators")
-    .select(
-      "id, handle, display_name, bio, location, avatar_url, banner_url, price_monthly_cents, is_verified, is_active",
-    )
+    .select(SELECT)
     .eq("handle", h)
     .eq("is_active", true)
     .maybeSingle();

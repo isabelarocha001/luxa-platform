@@ -11,10 +11,8 @@ import {
   MapPin,
 } from "lucide-react";
 import type { Creator } from "@/lib/types";
+import { PresenceLabel } from "@/components/PresenceLabel";
 
-/**
- * Perfil criadora — dados reais do banco (luxa_creators).
- */
 export function CreatorProfile({ creator }: { creator: Creator }) {
   return (
     <div className="mx-auto w-full max-w-3xl min-w-0 pb-28 lg:max-w-4xl lg:pb-10">
@@ -49,16 +47,16 @@ export function CreatorProfile({ creator }: { creator: Creator }) {
 
       <div className="min-w-0 px-3 sm:px-6">
         <div className="-mt-10 flex items-end justify-between gap-2 sm:-mt-12">
-          <img
-            src={creator.avatar}
-            alt=""
-            className="h-20 w-20 shrink-0 rounded-full border-4 border-luxa-bg object-cover shadow-lg sm:h-24 sm:w-24"
-          />
-          {creator.online && (
-            <span className="mb-1 shrink-0 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
-              Online
-            </span>
-          )}
+          <div className="relative shrink-0">
+            <img
+              src={creator.avatar}
+              alt=""
+              className="h-20 w-20 rounded-full border-4 border-luxa-bg object-cover shadow-lg sm:h-24 sm:w-24"
+            />
+            {creator.online && (
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-luxa-bg bg-emerald-400" />
+            )}
+          </div>
         </div>
 
         <div className="mt-3 min-w-0">
@@ -74,6 +72,9 @@ export function CreatorProfile({ creator }: { creator: Creator }) {
             )}
           </h1>
           <p className="truncate text-sm text-luxa-muted">@{creator.handle}</p>
+          <p className="mt-1.5 text-sm">
+            <PresenceLabel lastSeenAt={creator.lastSeenAt} />
+          </p>
         </div>
 
         {creator.bio && (
