@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatLastSeen, isOnline } from "@/lib/presence";
+import { formatLastSeen, isOnline, HEARTBEAT_MS } from "@/lib/presence";
 
-/** Live relative presence text — re-renders every 30s */
+/** Live relative presence text — re-renders every 1 minute */
 export function PresenceLabel({
   lastSeenAt,
   className = "",
@@ -14,7 +14,7 @@ export function PresenceLabel({
   const [, setTick] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    const id = setInterval(() => setTick((t) => t + 1), HEARTBEAT_MS);
     return () => clearInterval(id);
   }, []);
 
@@ -28,7 +28,9 @@ export function PresenceLabel({
     >
       <span
         className={`inline-block h-2 w-2 shrink-0 rounded-full ${
-          online ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" : "bg-luxa-muted/50"
+          online
+            ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+            : "bg-luxa-muted/50"
         }`}
       />
       <span className={online ? "text-emerald-400" : "text-luxa-muted"}>
