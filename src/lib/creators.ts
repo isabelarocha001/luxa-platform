@@ -4,15 +4,29 @@ import { isOnline } from "@/lib/presence";
 
 /**
  * Real creators from Supabase luxa_creators (active only for public).
- * Presence from last_seen_at (heartbeat).
+ * Never throws — empty list on missing env / network / RLS errors.
  */
 
 function db() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createServiceClient(url, key);
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        scope: "creators.db",
+        message: "Missing NEXT_PUBLIC_SUPABASE_URL or anon/service key",
+      }),
+    );
+    return null;
+  }
+
+  return createServiceClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 const SELECT =
@@ -70,47 +84,75 @@ function mapRow(row: Record<string, unknown>): Creator {
 }
 
 export async function listActiveCreators(): Promise<Creator[]> {
-  const { data, error } = await db()
-    .from("luxa_creators")
-    .select(SELECT)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  try {
+    const client = db();
+    if (!client) return [];
 
-  if (error) {
+    const { data, error } = await client
+      .from("luxa_creators")
+      .select(SELECT)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(
+        JSON.stringify({
+          level: "error",
+          scope: "creators.list",
+          message: error.message,
+        }),
+      );
+      return [];
+    }
+    return (data || []).map((r) => mapRow(r as Record<string, unknown>));
+  } catch (e) {
     console.error(
       JSON.stringify({
         level: "error",
         scope: "creators.list",
-        message: error.message,
+        message: e instanceof Error ? e.message : "list failed",
       }),
     );
     return [];
   }
-  return (data || []).map((r) => mapRow(r as Record<string, unknown>));
 }
 
 export async function getCreatorByHandle(
   handle: string,
 ): Promise<Creator | null> {
-  const h = handle.toLowerCase();
-  const { data, error } = await db()
-    .from("luxa_creators")
-    .select(SELECT)
-    .eq("handle", h)
-    .eq("is_active", true)
-    .maybeSingle();
+  try {
+    const h = handle.toLowerCase();
+    const client = db();
+    if (!client) return null;
 
-  if (error) {
+    const { data, error } = await client
+      .from("luxa_creators")
+      .select(SELECT)
+      .eq("handle", h)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        JSON.stringify({
+          level: "error",
+          scope: "creators.byHandle",
+          message: error.message,
+          handle: h,
+        }),
+      );
+      return null;
+    }
+    if (!data) return null;
+    return mapRow(data as Record<string, unknown>);
+  } catch (e) {
     console.error(
       JSON.stringify({
         level: "error",
         scope: "creators.byHandle",
-        message: error.message,
-        handle: h,
+        message: e instanceof Error ? e.message : "get failed",
       }),
     );
     return null;
   }
-  if (!data) return null;
-  return mapRow(data as Record<string, unknown>);
 }

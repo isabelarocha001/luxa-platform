@@ -9,10 +9,6 @@ const LINKS = [
   { href: "/admin/subscriptions", label: "Subscriptions" },
 ];
 
-/**
- * Admin shell — only role=admin or ADMIN_EMAILS.
- * Separate from public AppShell nav feel but still under site layout.
- */
 export default async function AdminLayout({
   children,
 }: {
@@ -22,6 +18,17 @@ export default async function AdminLayout({
   if (!auth.ok) {
     if (auth.status === 401) {
       redirect("/auth/login?next=/admin");
+    }
+    if (auth.status === 500) {
+      return (
+        <div className="mx-auto max-w-lg px-4 py-16 text-center">
+          <p className="text-sm text-red-400">{auth.error}</p>
+          <p className="mt-2 text-xs text-luxa-muted">
+            Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on
+            Vercel, then redeploy.
+          </p>
+        </div>
+      );
     }
     redirect("/");
   }
@@ -33,7 +40,9 @@ export default async function AdminLayout({
           <p className="text-xs font-semibold uppercase tracking-widest text-luxa-accent">
             Admin
           </p>
-          <h1 className="truncate text-xl font-bold sm:text-2xl">Luxa control panel</h1>
+          <h1 className="truncate text-xl font-bold sm:text-2xl">
+            Luxa control panel
+          </h1>
           <p className="truncate text-xs text-luxa-muted">
             {auth.profile?.email || auth.user?.email}
           </p>

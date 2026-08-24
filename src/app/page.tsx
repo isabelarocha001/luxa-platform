@@ -5,11 +5,24 @@ import { PresenceLabel } from "@/components/PresenceLabel";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const creators = await listActiveCreators();
+  let creators: Awaited<ReturnType<typeof listActiveCreators>> = [];
+  let loadError: string | null = null;
+
+  try {
+    creators = await listActiveCreators();
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Failed to load";
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl min-w-0 px-3 py-6 sm:px-4 sm:py-8">
-      {!creators.length && (
+      {loadError && (
+        <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          Could not load creators. Check Vercel env (Supabase URL + anon key).
+        </div>
+      )}
+
+      {!creators.length && !loadError && (
         <div className="rounded-2xl border border-dashed border-luxa-border bg-luxa-card/50 px-4 py-12 text-center">
           <p className="text-sm text-luxa-muted">No creators yet.</p>
         </div>
