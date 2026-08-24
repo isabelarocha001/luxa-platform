@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { CreditCard, Lock, ArrowLeft, Loader2 } from "lucide-react";
-import type { Creator } from "@/lib/demo-data";
+import type { Creator } from "@/lib/types";
 import { StripePaymentModal } from "@/components/StripePaymentModal";
 
-/** Checkout inline — layout fluido, sem overflow horizontal */
 export function SubscribeCheckout({ creator }: { creator: Creator }) {
   const params = useSearchParams();
   const router = useRouter();
@@ -93,14 +92,9 @@ export function SubscribeCheckout({ creator }: { creator: Creator }) {
             <CreditCard size={16} className="shrink-0 text-luxa-accent" />
             Pay with card
           </p>
-          <p className="mb-4 text-xs text-luxa-muted">
-            Card form opens in a popup on this page (Stripe Payment Element).
-          </p>
-
           {error && (
             <p className="mb-3 break-anywhere text-sm text-red-400">{error}</p>
           )}
-
           <button
             type="button"
             disabled={loading}
@@ -118,9 +112,6 @@ export function SubscribeCheckout({ creator }: { creator: Creator }) {
             )}
           </button>
         </div>
-        <p className="mt-4 text-center text-[11px] text-luxa-muted">
-          18+ · GDPR · Secure · Stripe Elements
-        </p>
       </div>
 
       {clientSecret && (

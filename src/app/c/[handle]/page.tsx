@@ -1,14 +1,16 @@
 import { notFound } from "next/navigation";
-import { DEMO_CREATORS, getCreatorByHandle } from "@/lib/demo-data";
+import { getCreatorByHandle } from "@/lib/creators";
 import { CreatorProfile } from "@/components/CreatorProfile";
 
-export function generateStaticParams() {
-  return DEMO_CREATORS.map((c) => ({ handle: c.handle }));
-}
+export const dynamic = "force-dynamic";
 
-export default async function CreatorPage({ params }: { params: Promise<{ handle: string }> }) {
+export default async function CreatorPage({
+  params,
+}: {
+  params: Promise<{ handle: string }>;
+}) {
   const { handle } = await params;
-  const creator = getCreatorByHandle(handle);
+  const creator = await getCreatorByHandle(handle);
   if (!creator) notFound();
   return <CreatorProfile creator={creator} />;
 }

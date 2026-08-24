@@ -5,21 +5,15 @@ import {
   extractInvoiceClientSecret,
 } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
-import { getCreatorByHandle } from "@/lib/demo-data";
+import { getCreatorByHandle } from "@/lib/creators";
 import { logger } from "@/lib/logger";
 
 const log = logger("api.checkout.create-subscription");
 
 /**
- * Creates an incomplete subscription and returns PaymentIntent client_secret
- * for Stripe Payment Element (inline modal — no hosted Checkout redirect).
- *
- * STRIPE RULE (do not break again):
- * - Checkout Session `line_items.price_data` MAY use `product_data`
- * - Subscription `items.price_data` MUST use `product: "prod_xxx"` (existing Product id)
- *   — TypeScript `PriceData` has no `product_data` field for subscriptions.
- *
- * Docs: docs/STRIPE.md | docs/DEVELOPMENT.md
+ * Incomplete subscription → clientSecret for Payment Element.
+ * Creator must exist in luxa_creators (no demo).
+ * Docs: docs/STRIPE.md
  */
 export async function POST(request: Request) {
   const started = Date.now();
@@ -30,7 +24,7 @@ export async function POST(request: Request) {
 
     log.info("request", { handle, planMonths });
 
-    const creator = getCreatorByHandle(handle);
+    const creator = await getCreatorByHandle(handle);
     if (!creator) {
       log.warn("creator not found", { handle });
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
@@ -80,7 +74,6 @@ export async function POST(request: Request) {
       log.info("customer created", { userId: user.id, customerId });
     }
 
-    // Subscription price_data requires an existing Product id (not product_data).
     const product = await stripe.products.create({
       name: `@${creator.handle} — ${planMonths}mo`,
       metadata: {

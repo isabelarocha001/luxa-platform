@@ -10,16 +10,15 @@ import {
   Play,
   MapPin,
 } from "lucide-react";
-import type { Creator } from "@/lib/demo-data";
+import type { Creator } from "@/lib/types";
 
 /**
- * Perfil criadora — fluido mobile → desktop.
- * Evita overflow: truncate, min-w-0, flex-wrap, sticky CTA com safe-area.
+ * Perfil criadora — dados reais do banco (luxa_creators).
  */
 export function CreatorProfile({ creator }: { creator: Creator }) {
   return (
     <div className="mx-auto w-full max-w-3xl min-w-0 pb-28 lg:max-w-4xl lg:pb-10">
-      <div className="relative h-36 w-full overflow-hidden bg-luxa-card xs:h-40 sm:h-52 md:h-64">
+      <div className="relative h-36 w-full overflow-hidden bg-luxa-card sm:h-52 md:h-64">
         <img
           src={creator.banner}
           alt=""
@@ -74,15 +73,14 @@ export function CreatorProfile({ creator }: { creator: Creator }) {
               </span>
             )}
           </h1>
-          <p className="truncate text-sm text-luxa-muted">
-            @{creator.handle}
-            {creator.online ? " · Seen just now" : ""}
-          </p>
+          <p className="truncate text-sm text-luxa-muted">@{creator.handle}</p>
         </div>
 
-        <p className="mt-3 break-anywhere whitespace-pre-line text-sm leading-relaxed text-luxa-text/90">
-          {creator.bio}
-        </p>
+        {creator.bio && (
+          <p className="mt-3 break-anywhere whitespace-pre-line text-sm leading-relaxed text-luxa-text/90">
+            {creator.bio}
+          </p>
+        )}
         {creator.location && (
           <p className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-xs text-luxa-muted">
             <MapPin size={12} className="shrink-0" />
@@ -142,39 +140,44 @@ export function CreatorProfile({ creator }: { creator: Creator }) {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-          {creator.media.map((item) => (
-            <Link
-              key={item.id}
-              href={`/c/${creator.handle}/subscribe`}
-              className="group relative aspect-[4/5] min-w-0 overflow-hidden rounded-lg bg-luxa-card"
-            >
-              <img
-                src={item.thumb}
-                alt=""
-                className={`h-full w-full object-cover ${
-                  item.locked ? "lock-blur" : ""
-                }`}
-              />
-              {item.locked && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/35 px-1 text-center text-white">
-                  <Lock size={20} className="shrink-0" />
-                  <span className="text-[9px] font-semibold uppercase leading-tight tracking-wide sm:text-[10px]">
-                    Subscribe to unlock
+        {creator.media.length === 0 ? (
+          <p className="mt-8 text-center text-sm text-luxa-muted">
+            No media published yet.
+          </p>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {creator.media.map((item) => (
+              <Link
+                key={item.id}
+                href={`/c/${creator.handle}/subscribe`}
+                className="group relative aspect-[4/5] min-w-0 overflow-hidden rounded-lg bg-luxa-card"
+              >
+                <img
+                  src={item.thumb}
+                  alt=""
+                  className={`h-full w-full object-cover ${
+                    item.locked ? "lock-blur" : ""
+                  }`}
+                />
+                {item.locked && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/35 px-1 text-center text-white">
+                    <Lock size={20} className="shrink-0" />
+                    <span className="text-[9px] font-semibold uppercase leading-tight tracking-wide sm:text-[10px]">
+                      Subscribe to unlock
+                    </span>
+                  </div>
+                )}
+                {item.type === "video" && (
+                  <span className="absolute left-2 top-2 rounded bg-black/50 p-1">
+                    <Play size={12} fill="white" className="text-white" />
                   </span>
-                </div>
-              )}
-              {item.type === "video" && (
-                <span className="absolute left-2 top-2 rounded bg-black/50 p-1">
-                  <Play size={12} fill="white" className="text-white" />
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Sticky CTA mobile — acima da bottom nav (pb considera nav ~56px + safe) */}
       <div className="fixed inset-x-0 bottom-14 z-30 border-t border-luxa-border bg-luxa-bg/95 p-2 pb-safe backdrop-blur sm:p-3 lg:hidden">
         <Link
           href={`/c/${creator.handle}/subscribe`}

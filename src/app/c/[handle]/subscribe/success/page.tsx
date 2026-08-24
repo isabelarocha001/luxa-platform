@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { getCreatorByHandle } from "@/lib/demo-data";
+import { getCreatorByHandle } from "@/lib/creators";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 export default async function SubscribeSuccessPage({
   params,
@@ -11,7 +13,7 @@ export default async function SubscribeSuccessPage({
 }) {
   const { handle } = await params;
   const { session_id } = await searchParams;
-  const creator = getCreatorByHandle(handle);
+  const creator = await getCreatorByHandle(handle);
   if (!creator) notFound();
 
   return (
