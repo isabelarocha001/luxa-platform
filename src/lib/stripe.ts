@@ -13,13 +13,14 @@ import Stripe from "stripe";
  * 4. Card-only EU: `payment_method_types: ["card"]`, currency `eur`.
  * 5. Never send users to hosted Checkout when the product requirement is
  *    inline popup — use Payment Element + incomplete subscription.
+ * 6. `apiVersion` must match the installed `stripe` package types or TypeScript build fails.
+ *    On package upgrade, bump to the version required by the error message.
  */
 export function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
-  // apiVersion pinned; if package upgrades complain, bump to match stripe package types
   return new Stripe(key, {
-    apiVersion: "2025-01-27.acacia",
+    apiVersion: "2025-02-24.acacia",
     typescript: true,
   });
 }
