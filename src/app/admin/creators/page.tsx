@@ -1,10 +1,12 @@
-import { adminDb } from "@/lib/admin";
+import { getAdminClient } from "@/lib/admin";
 import { CreateCreatorForm } from "@/components/admin/CreateCreatorForm";
 import { CreatorRowActions } from "@/components/admin/CreatorRowActions";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminCreatorsPage() {
-  const db = adminDb();
+  const db = await getAdminClient();
   const { data: creators, error } = await db
     .from("luxa_creators")
     .select(
@@ -17,8 +19,7 @@ export default async function AdminCreatorsPage() {
       <section className="rounded-2xl border border-luxa-border bg-luxa-card p-4 sm:p-5">
         <h2 className="text-lg font-bold">Create creator</h2>
         <p className="mt-1 text-xs text-luxa-muted">
-          Cria registro em <code>luxa_creators</code>. Handle único (a-z, 0-9,
-          _). Preço em EUR.
+          Cria registro em luxa_creators. Handle único (a-z, 0-9, _). Preço em EUR.
         </p>
         <div className="mt-4">
           <CreateCreatorForm />

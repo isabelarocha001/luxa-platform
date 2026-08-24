@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { adminDb } from "@/lib/admin";
+import { getAdminClient } from "@/lib/admin";
 
-/**
- * Admin dashboard — counts from luxa_* tables.
- * Demo creators on the public site are placeholders until you create real ones here.
- */
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboardPage() {
-  const db = adminDb();
+  const db = await getAdminClient();
 
   const [creators, profiles, subs] = await Promise.all([
     db.from("luxa_creators").select("id", { count: "exact", head: true }),
@@ -29,19 +27,6 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100/90">
-        <p className="font-semibold">Sobre os perfis na home</p>
-        <p className="mt-1 text-amber-100/70">
-          Os perfis tipo <code className="text-amber-200">luzcervo</code> na home
-          são <strong>demo estático</strong> (arquivo de código), só pra layout.
-          Creators reais da plataforma são criados aqui em{" "}
-          <Link href="/admin/creators" className="underline">
-            Creators
-          </Link>
-          .
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {cards.map((c) => (
           <Link

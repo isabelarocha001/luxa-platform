@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { adminDb, requireAdmin } from "@/lib/admin";
+import { getAdminClient, requireAdmin } from "@/lib/admin";
 import { logger } from "@/lib/logger";
 
 const log = logger("api.admin.creators");
 
 /**
  * POST — create luxa_creators row (admin only).
- * user_id is nullable so platform admin can create many creators without one auth user each.
+ * Uses service role if set, otherwise admin session + RLS policy.
  * Docs: docs/ADMIN.md
  */
 export async function POST(request: Request) {
@@ -31,14 +31,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid handle" }, { status: 400 });
     }
     if (!displayName) {
-      return NextResponse.json({ error: "displayName required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "displayName required" },
+        { status: 400 },
+      );
     }
     if (!Number.isFinite(priceMonthly) || priceMonthly < 1) {
       return NextResponse.json({ error: "Invalid price" }, { status: 400 });
     }
 
     const price_monthly_cents = Math.round(priceMonthly * 100);
-    const db = adminDb();
+    const db = await getAdminClient();
 
     log.info("create creator", { handle, adminId: auth.user!.id });
 
@@ -61,11 +64,20 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      log.error("create failed", { err: error.message, handle });
+      log.error("create failed", { err: error.message, handle, code: error.code });
       if (error.code === "23505" || error.message.includes("unique")) {
         return NextResponse.json(
           { error: "Handle already taken" },
           { status: 409 },
+        );
+      }
+      if (error.message.includes("row-level security")) {
+        return NextResponse.json(
+          {
+            error:
+              "RLS blocked insert. Add SUPABASE_SERVICE_ROLE_KEY on Vercel or ensure luxa_profiles.role=admin for your user.",
+          },
+          { status: 403 },
         );
       }
       return NextResponse.json({ error: error.message }, { status: 500 });

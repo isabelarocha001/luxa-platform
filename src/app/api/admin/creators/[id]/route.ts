@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, requireAdmin } from "@/lib/admin";
+import { getAdminClient, requireAdmin } from "@/lib/admin";
 import { logger } from "@/lib/logger";
 
 const log = logger("api.admin.creators.patch");
@@ -15,7 +15,9 @@ export async function PATCH(
 
   const { id } = await ctx.params;
   const body = await request.json();
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
 
   if (typeof body.is_active === "boolean") patch.is_active = body.is_active;
   if (typeof body.is_verified === "boolean") patch.is_verified = body.is_verified;
@@ -24,7 +26,7 @@ export async function PATCH(
   if (typeof body.price_monthly_cents === "number")
     patch.price_monthly_cents = body.price_monthly_cents;
 
-  const db = adminDb();
+  const db = await getAdminClient();
   const { error } = await db.from("luxa_creators").update(patch).eq("id", id);
 
   if (error) {
